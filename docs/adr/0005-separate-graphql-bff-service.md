@@ -1,0 +1,3 @@
+# GraphQL BFF runs as a separate private service
+
+The storefront is a Next.js app that consumes a separately deployed GraphQL BFF over HTTP. The BFF remains the only backend the storefront calls (see ADR-0002); it is not embedded in the Next.js process. The BFF is private: only the Next server calls it; the browser does not. Next authenticates to the BFF with a shared secret header; cart/customer context is forwarded explicitly from the storefront session cookie into BFF/GraphQL context. Session cookies stay first-party on the storefront (see ADR-0004). The repo is a monorepo with separate apps for storefront and BFF. This preserves a two-process client/BFF boundary without making cross-origin browser cookies a PoC requirement.

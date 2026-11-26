@@ -1,0 +1,3 @@
+# v1 ticket spine
+
+The PoC backlog is twelve vertical slices in this order: (01) Next.js → GraphQL walking skeleton with mock data; (02) Contentstack Homepage; (03) commercetools PLP; (04) commercetools PDP including one-attribute variant selection; (05) PDP Product Enrichment via Product Key; (06) anonymous cart create/add; (07) cart display/totals; (08) cart update/remove; (09) GraphQL PoC auth and cart merge; (10) external API failure handling (mapped errors/UI states only); (11) e2e cart journey (guest + login/merge, no checkout); (12) time-boxed architecture review and refactor (fix top boundary issues; update ADRs only if decisions changed; no feature work). Mock-then-replace CMS/catalogue tickets are intentionally omitted because real vendors enter early.
