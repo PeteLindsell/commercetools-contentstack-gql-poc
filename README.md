@@ -43,6 +43,10 @@ pnpm dev:storefront
 
 Then open [http://localhost:3000](http://localhost:3000). The homepage is a Server Component that queries `skeleton { message }` on the BFF using `x-bff-shared-secret`. View source / network in the browser: there is no GraphQL call from the client.
 
+### GraphiQL (local)
+
+Open [http://localhost:4000/graphql](http://localhost:4000/graphql) for the Yoga GraphiQL IDE. Local GraphiQL is preconfigured with `x-bff-shared-secret` so introspection and queries work. The storefront remains the only production-style BFF client; GraphiQL is a local exploration aid (`BFF_GRAPHIQL=false` disables it).
+
 ## Scripts
 
 ```bash

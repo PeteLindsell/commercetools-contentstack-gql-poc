@@ -7,9 +7,13 @@ if (!sharedSecret) {
 }
 
 const port = Number(process.env.BFF_PORT ?? "4000");
-const yoga = createBffApp({ sharedSecret });
+const graphiql = process.env.BFF_GRAPHIQL !== "false";
+const yoga = createBffApp({ sharedSecret, graphiql });
 
 const server = createServer(yoga);
 server.listen(port, () => {
   console.log(`GraphQL BFF ready at http://localhost:${port}/graphql`);
+  if (graphiql) {
+    console.log("GraphiQL enabled (set BFF_GRAPHIQL=false to disable)");
+  }
 });

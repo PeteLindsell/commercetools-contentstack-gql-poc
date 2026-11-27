@@ -65,4 +65,35 @@ describe("GraphQL BFF seam", () => {
       },
     });
   });
+
+  it("serves GraphiQL without the shared-secret header when enabled", async () => {
+    const yoga = createBffApp({ sharedSecret: SHARED_SECRET, graphiql: true });
+
+    const response = await yoga.fetch("http://localhost/graphql", {
+      method: "GET",
+      headers: {
+        accept: "text/html",
+      },
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toMatch(/text\/html/);
+    const html = await response.text();
+    expect(html).toContain("x-bff-shared-secret");
+    expect(html).toContain(SHARED_SECRET);
+  });
+
+  it("still rejects GraphQL operations without the shared-secret when GraphiQL is enabled", async () => {
+    const yoga = createBffApp({ sharedSecret: SHARED_SECRET, graphiql: true });
+
+    const response = await yoga.fetch("http://localhost/graphql", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ query: SKELETON_QUERY }),
+    });
+
+    expect(response.status).toBe(401);
+  });
 });
