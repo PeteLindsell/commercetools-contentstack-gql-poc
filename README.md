@@ -45,7 +45,7 @@ Then open [http://localhost:3000](http://localhost:3000). The homepage is a Serv
 
 ### GraphiQL (local)
 
-Open [http://localhost:4000/graphql](http://localhost:4000/graphql) for the Yoga GraphiQL IDE. Local GraphiQL is preconfigured with `x-bff-shared-secret` so introspection and queries work. The storefront remains the only production-style BFF client; GraphiQL is a local exploration aid (`BFF_GRAPHIQL=false` disables it).
+GraphiQL is off by default. Set `BFF_GRAPHIQL=true`, restart the BFF, then open [http://localhost:4000/graphql](http://localhost:4000/graphql). When enabled, the IDE is preconfigured with `x-bff-shared-secret` so introspection and queries work. The storefront remains the only production-style BFF client; GraphiQL is an opt-in local exploration aid.
 
 ## Scripts
 

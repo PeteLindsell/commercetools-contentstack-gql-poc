@@ -66,6 +66,19 @@ describe("GraphQL BFF seam", () => {
     });
   });
 
+  it("does not serve GraphiQL by default", async () => {
+    const yoga = createBffApp({ sharedSecret: SHARED_SECRET });
+
+    const response = await yoga.fetch("http://localhost/graphql", {
+      method: "GET",
+      headers: {
+        accept: "text/html",
+      },
+    });
+
+    expect(response.status).toBe(401);
+  });
+
   it("serves GraphiQL without the shared-secret header when enabled", async () => {
     const yoga = createBffApp({ sharedSecret: SHARED_SECRET, graphiql: true });
 
