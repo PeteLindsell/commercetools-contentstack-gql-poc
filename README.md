@@ -24,7 +24,42 @@ cp .env.example .env
 cp .env.example apps/storefront/.env.local
 ```
 
-Edit secrets if you like; local defaults work for the walking skeleton.
+Edit secrets if you like; local defaults work for the walking skeleton. Product listing also needs the commercetools variables below.
+
+## commercetools catalogue
+
+The PoC uses one locale, one currency, one store, and one distribution channel. Defaults are `en-GB`, `GBP`, store `poc`, and channel `poc-retail`. There is no market switcher.
+
+Create an API client in the Merchant Center with scope `manage_project:{projectKey}` (the seed creates product types, products, a channel, and a store). Put the credentials in the root `.env`:
+
+| Variable | Purpose |
+| --- | --- |
+| `CTP_PROJECT_KEY` | commercetools project key |
+| `CTP_CLIENT_ID` | API client id |
+| `CTP_CLIENT_SECRET` | API client secret |
+| `CTP_AUTH_URL` | Auth host for the project region |
+| `CTP_API_URL` | API host for the project region |
+| `CTP_LOCALE` | Single locale (default `en-GB`) |
+| `CTP_CURRENCY` | Single currency (default `GBP`) |
+| `CTP_STORE_KEY` | Single store key (default `poc`) |
+| `CTP_CHANNEL_KEY` | Distribution channel key (default `poc-retail`) |
+| `CTP_SCOPES` | Optional comma-separated scopes. Default `manage_project:{projectKey}` |
+
+Seed a small custom catalogue (not vendor sample data). The script is safe to re-run: existing keys are left in place, and unpublished products are published.
+
+```bash
+pnpm seed:catalogue
+```
+
+Seeded Product Keys, each with size Variants `S`, `M`, and `L`:
+
+| Product Key | Name |
+| --- | --- |
+| `organic-cotton-tee` | Organic cotton tee |
+| `merino-crew-neck` | Merino crew neck |
+| `linen-overshirt` | Linen overshirt |
+
+Restart the BFF after filling in credentials. The product listing is [http://localhost:3000/products](http://localhost:3000/products). Without commercetools credentials the page reports that the catalogue is not configured; the walking skeleton still runs.
 
 ## Run locally (two processes)
 
@@ -41,7 +76,7 @@ pnpm dev:bff
 pnpm dev:storefront
 ```
 
-Then open [http://localhost:3000](http://localhost:3000). The homepage is a Server Component that queries `skeleton { message }` on the BFF using `x-bff-shared-secret`. View source / network in the browser: there is no GraphQL call from the client.
+Then open [http://localhost:3000](http://localhost:3000). The homepage is a Server Component that queries `skeleton { message }` on the BFF using `x-bff-shared-secret`. View source / network in the browser: there is no GraphQL call from the client. [http://localhost:3000/products](http://localhost:3000/products) lists Products from commercetools the same way.
 
 ### GraphiQL (local)
 
@@ -50,21 +85,43 @@ GraphiQL is off by default. Set `BFF_GRAPHIQL=true`, restart the BFF, then open 
 ## Scripts
 
 ```bash
-pnpm test        # BFF GraphQL seam tests (primary harness)
+pnpm test            # BFF GraphQL seam tests (primary harness)
 pnpm typecheck
 pnpm lint
 pnpm build
+pnpm seed:catalogue  # create the commercetools catalogue (see above)
 ```
 
-## Walking skeleton GraphQL contract
+## GraphQL contract
 
 ```graphql
 type Query {
   skeleton: Skeleton!
+  """
+  Products for sale, projected from commercetools for the configured locale, currency, and store.
+  """
+  products: [Product!]!
 }
 
 type Skeleton {
   message: String!
+}
+
+type Product {
+  key: String!
+  name: String!
+  variants: [Variant!]!
+}
+
+type Variant {
+  sku: String!
+  size: String!
+  price: Money!
+}
+
+type Money {
+  centAmount: Int!
+  currencyCode: String!
 }
 ```
 
