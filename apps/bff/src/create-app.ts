@@ -1,4 +1,9 @@
+import { GraphQLError } from "graphql";
 import { createSchema, createYoga, shouldRenderGraphiQL } from "graphql-yoga";
+import {
+  presentHomepage,
+  type HomepageSource,
+} from "./homepage-source.js";
 
 export const SHARED_SECRET_HEADER = "x-bff-shared-secret";
 
@@ -16,6 +21,8 @@ export type BffAppOptions = {
   sharedSecret: string;
   /** Local GraphiQL IDE. Off by default; enable for local exploration. */
   graphiql?: boolean;
+  /** Contentstack Homepage adapter. Omitted until the CMS is configured. */
+  homepageSource?: HomepageSource;
 };
 
 export function createBffApp(options: BffAppOptions) {
@@ -23,15 +30,34 @@ export function createBffApp(options: BffAppOptions) {
     typeDefs: /* GraphQL */ `
       type Query {
         skeleton: Skeleton!
+        homepage: Homepage
       }
 
       type Skeleton {
         message: String!
       }
+
+      """
+      Editorial Homepage from Contentstack. No Product references.
+      Null when the Homepage entry is missing or has no headline and no body.
+      """
+      type Homepage {
+        headline: String!
+        body: String!
+        imageUrl: String
+      }
     `,
     resolvers: {
       Query: {
         skeleton: () => ({ message: SKELETON_MESSAGE }),
+        homepage: async () => {
+          if (!options.homepageSource) {
+            throw new GraphQLError("Homepage source is not configured");
+          }
+
+          const content = await options.homepageSource.getHomepage();
+          return presentHomepage(content);
+        },
       },
     },
   });
