@@ -1,7 +1,8 @@
 {
   "name": "commercetools-contentstack-gql-poc",
   "version": "1.0.0",
-  "description": "",
+  "private": true,
+  "description": "Headless storefront PoC — Next.js storefront + private GraphQL BFF",
   "homepage": "https://github.com/PeteLindsell/commercetools-contentstack-gql-poc#readme",
   "bugs": {
     "url": "https://github.com/PeteLindsell/commercetools-contentstack-gql-poc/issues"
@@ -11,10 +12,14 @@
     "url": "git+https://github.com/PeteLindsell/commercetools-contentstack-gql-poc.git"
   },
   "license": "ISC",
-  "author": "",
-  "type": "commonjs",
-  "main": "index.js",
+  "packageManager": "pnpm@12.23.0",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "pnpm -r --parallel --filter @poc/bff --filter @poc/storefront dev",
+    "dev:bff": "pnpm --filter @poc/bff dev",
+    "dev:storefront": "pnpm --filter @poc/storefront dev",
+    "build": "pnpm -r --filter @poc/bff --filter @poc/storefront build",
+    "test": "pnpm -r --filter @poc/bff --filter @poc/storefront test",
+    "lint": "pnpm -r --filter @poc/bff --filter @poc/storefront lint",
+    "typecheck": "pnpm -r --filter @poc/bff --filter @poc/storefront typecheck"
   }
 }
