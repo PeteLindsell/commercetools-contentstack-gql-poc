@@ -13,9 +13,10 @@ Fill after validation. Attach via the tracker comment operation and/or PR body. 
 interactive | autonomous
 
 ## Scope
+- **Outcome:** <one line>
 - **In:** <one or two lines>
 - **Out:** <one or two lines>
-- **Assumptions** (autonomous only, if any): <ticket-authorised assumptions>
+- **Constraints:** <ADRs / architecture that bound the slice, or "none">
 
 ## Acceptance criteria
 
@@ -26,11 +27,22 @@ interactive | autonomous
 
 ## Validation
 - Commands run: <from the environment>
-- Result: green | noted failures (out of scope: …)
+- Result: green | failures (in scope fixed / out of scope noted)
+- Could not run: <check and why, or "none">
+
+## Manual verification
+<steps a human can take to confirm the behaviour, or "n/a — covered by automated checks">
+
+## Decisions and assumptions
+<choices not explicit on the ticket, including ticket-authorised autonomous assumptions, or "none">
+
+## Outstanding issues
+<limitations, risks, follow-ups, or "none">
 
 ## Review
 - Branch: <name>
 - Fixed point for `/code-review`: <ref>
+- Pushed: yes | no
 - PR: <url or "not opened">
 ```
 

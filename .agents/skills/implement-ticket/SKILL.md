@@ -15,6 +15,7 @@ Implement **one ticket** as one **vertical slice**. Complements `/implement` (li
 1. Read root `AGENTS.md` or `CLAUDE.md` (whichever exists) and follow its `## Agent skills` pointers for the issue tracker and domain docs.
 2. If those pointers are missing, stop and tell the user to run `/setup-matt-pocock-skills`.
 3. Require a ticket reference (argument, URL, id, or path). Missing or ambiguous reference: **interactive** → ask; **autonomous** → stop.
+4. Inspect the working tree. Note existing dirty files; leave unrelated changes untouched for the whole run.
 
 Discover tracker operations, label names, glossary/ADR locations, and validation commands from those pointers and the repo environment.
 
@@ -25,7 +26,9 @@ Detect once at start:
 - **Interactive** — a human can answer mid-run (default when a person invoked this skill).
 - **Autonomous** — no human turn mid-run (AFK/factory run, or the user said autonomous/AFK).
 
-**Material ambiguity** is anything that would change the slice's shape or its acceptance criteria. Interactive asks until resolved. Autonomous stops and leaves a blocker note on the ticket (tracker doc's comment operation), unless the ticket itself already authorises a stated assumption — then record that assumption in the report and continue. Scope is only what the ticket and resolved answers state.
+**Material ambiguity** is anything that would change the slice's shape, acceptance criteria, architecture, or security posture. Interactive asks until resolved. Autonomous stops and leaves a blocker note on the ticket (tracker doc's comment operation), unless the ticket itself already authorises a stated assumption — then record that assumption in the report and continue. Scope is only what the ticket and resolved answers state.
+
+When nothing material is ambiguous, proceed without waiting for approval.
 
 ## Steps
 
@@ -39,7 +42,9 @@ Fetch the ticket via the tracker doc ("fetch the relevant ticket" / read operati
 
 Follow the domain-docs pointer before exploring code. Load only glossary terms and ADRs that touch this ticket. Explore with **context pointers** (paths, symbols, prior commits) — sparse notes, not dumps.
 
-**Done when:** relevant glossary terms and ADRs named; modules/files in play listed as pointers.
+If the intended approach would contradict an applicable ADR, stop and report the conflict (interactive: ask; autonomous: ticket comment). Do not silently override the ADR.
+
+**Done when:** relevant glossary terms and ADRs named; modules/files in play listed as pointers; no unresolved ADR conflict.
 
 ### 3. Check blocking dependencies
 
@@ -49,32 +54,51 @@ Using the tracker doc's blocking / frontier rules, confirm every blocker is done
 
 ### 4. Establish scope and resolve material ambiguity
 
-Restate, briefly: in-scope behaviour, explicit out-of-scope, and the acceptance criteria you will evidence. Resolve every **material ambiguity** per Mode before writing code. Missing criteria: interactive → agree them; autonomous → stop (or use ticket-authorised assumptions only).
+Restate, briefly: intended outcome, in-scope behaviour, explicit out-of-scope, acceptance criteria you will evidence, and any relevant architectural constraints. A one-line proposed approach is enough when it clarifies the slice; skip it when obvious.
+
+Resolve every **material ambiguity** per Mode before writing code. Missing criteria: interactive → agree them; autonomous → stop (or use ticket-authorised assumptions only).
 
 **Done when:** scope is explicit and no unresolved material ambiguity remains.
 
-### 5. Implement a single vertical slice
+### 5. Ensure a reviewable branch
 
-Call the Skill tool with `tdd` at pre-agreed **seams**. One red → green cycle at a time through the ticket's behaviour.
+Before writing code: if `HEAD` is on the default branch, or the current branch clearly belongs to other work, create or switch to a branch for this ticket. Prefer the repo's branch-naming convention when one is documented; otherwise derive a short name from the ticket id/title. If already on a dedicated branch for this ticket, keep it.
+
+**Done when:** subsequent commits will land on a branch suitable for independent review.
+
+### 6. Implement a single vertical slice
+
+Call the Skill tool with `tdd` at pre-agreed **seams**. One red → green cycle at a time through the ticket's behaviour. Leave pre-existing unrelated working-tree changes untouched.
+
+If implementation surfaces a new ADR conflict or material ambiguity, return to Mode (stop/ask) rather than expanding scope.
 
 **Done when:** the ticket's end-to-end behaviour exists behind the agreed seams.
 
-### 6. Test and validate
+### 7. Test and validate
 
 Discover validation from the environment (`package.json` scripts, CI config, README). Run the narrowest checks that cover the seams during the loop; run the full relevant suite once at the end when practical. Fix failures inside this slice; note out-of-scope failures in the report and leave them untouched.
 
-**Done when:** chosen validation is green, or remaining failures are explicitly out of scope.
+Keep tests and checks honest: change production code or fix real failures inside scope; leave the bar in place. Report every relevant check that could not be run.
 
-### 7. Report evidence against acceptance criteria
+Inspect the final diff: only this slice's files and hunks.
 
-Produce the report in [REPORT.md](REPORT.md). One row per acceptance criterion: pass / fail / deferred, with evidence (test name, command output pointer, screenshot pointer).
+**Done when:** chosen validation is green (or remaining failures / unrunnable checks are explicitly reported); diff matches the scoped slice.
 
-**Done when:** every criterion has a status and evidence pointer (or an explicit "no criteria on ticket" note).
+### 8. Report evidence against acceptance criteria
 
-### 8. Leave changes ready for independent review
+Produce the report in [REPORT.md](REPORT.md). One row per acceptance criterion: pass / fail / deferred, with evidence. Include manual verification, decisions/assumptions, and outstanding issues.
 
-Commit on the current branch when there are changes to review. Call the Skill tool with `code-review` against the branch's fixed point (merge-base with the default branch unless the user named another). Leave the branch unmerged for independent review. Close or re-label the ticket only when the tracker workflow and mode require it. Open a PR only when the user asks, or when the autonomous run brief / tracker workflow says review happens through a PR — then call the Skill tool with `pr` for the body.
+**Done when:** every criterion has a status and evidence pointer (or an explicit "no criteria on ticket" note); report sections above are filled or marked n/a.
 
-Attach the evidence report where the next reviewer will find it (ticket comment and/or PR body).
+### 9. Leave changes ready for independent review
+
+Commit on the ticket branch when there are changes to review. Call the Skill tool with `code-review` against the branch's fixed point (merge-base with the default branch unless the user named another).
+
+Leave the branch unmerged. Default completion boundaries:
+
+- **Interactive:** leave local (push, open PR, or close/re-label the ticket only when the user asks).
+- **Autonomous:** follow the run brief / tracker workflow for push, PR, and ticket state; still leave merge to a human or a later review run.
+
+When a PR is opened, call the Skill tool with `pr` for the body. Attach the evidence report where the next reviewer will find it (ticket comment and/or PR body).
 
 **Done when:** the diff is reviewable cold; evidence report is attached; ownership for the next review step is clear.
