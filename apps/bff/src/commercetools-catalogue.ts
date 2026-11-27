@@ -1,5 +1,4 @@
 import type {
-  LocalizedString,
   Price,
   ProductProjection,
   ProductVariant,
@@ -46,7 +45,7 @@ export function createCommercetoolsCatalogue(
 
       return response.body.results
         .flatMap((projection) => {
-          const listed = toListedProduct(projection, config);
+          const listed = toListedProduct(projection, config, channelId);
           return listed ? [listed] : [];
         })
         .sort((left, right) =>
@@ -94,16 +93,17 @@ export function createCommercetoolsCatalogue(
 function toListedProduct(
   projection: ProductProjection,
   config: CommerceConfig,
+  channelId: string,
 ): ListedProduct | undefined {
   const key = projection.key?.trim();
-  const name = localized(projection.name, config.locale);
+  const name = projection.name[config.locale]?.trim() ?? "";
   if (!key || !name) {
     return undefined;
   }
 
   const variants = [projection.masterVariant, ...projection.variants].flatMap(
     (variant) => {
-      const listed = toListedVariant(variant, config.currency);
+      const listed = toListedVariant(variant, config.currency, channelId);
       return listed ? [listed] : [];
     },
   );
@@ -117,10 +117,11 @@ function toListedProduct(
 function toListedVariant(
   variant: ProductVariant,
   currency: string,
+  channelId: string,
 ): ListedVariant | undefined {
   const sku = variant.sku?.trim();
   const size = readSize(variant);
-  const price = readPrice(variant, currency);
+  const price = readPrice(variant, currency, channelId);
   if (!sku || !size || !price) {
     return undefined;
   }
@@ -156,13 +157,14 @@ function enumKey(value: unknown): string | undefined {
 function readPrice(
   variant: ProductVariant,
   currency: string,
+  channelId: string,
 ): VariantPrice | undefined {
-  const selected = moneyInCurrency(variant.price, currency);
+  const selected = moneyForChannel(variant.price, currency, channelId);
   if (selected) {
     return selected;
   }
   for (const price of variant.prices ?? []) {
-    const match = moneyInCurrency(price, currency);
+    const match = moneyForChannel(price, currency, channelId);
     if (match) {
       return match;
     }
@@ -170,29 +172,20 @@ function readPrice(
   return undefined;
 }
 
-function moneyInCurrency(
+function moneyForChannel(
   price: Price | undefined,
   currency: string,
+  channelId: string,
 ): VariantPrice | undefined {
-  if (!price || price.value.currencyCode !== currency) {
+  if (
+    !price ||
+    price.value.currencyCode !== currency ||
+    price.channel?.id !== channelId
+  ) {
     return undefined;
   }
   return {
     centAmount: price.value.centAmount,
     currencyCode: price.value.currencyCode,
   };
-}
-
-function localized(value: LocalizedString, locale: string): string {
-  const exact = value[locale]?.trim();
-  if (exact) {
-    return exact;
-  }
-  for (const candidate of Object.values(value)) {
-    const trimmed = candidate.trim();
-    if (trimmed) {
-      return trimmed;
-    }
-  }
-  return "";
 }
