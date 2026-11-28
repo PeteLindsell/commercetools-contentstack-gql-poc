@@ -1,15 +1,19 @@
 const SHARED_SECRET_HEADER = "x-bff-shared-secret";
 
-type SkeletonQueryResult = {
+export type Homepage = {
+  headline: string;
+  body: string;
+  imageUrl: string | null;
+};
+
+type HomepageQueryResult = {
   data?: {
-    skeleton: {
-      message: string;
-    };
+    homepage: Homepage | null;
   };
   errors?: Array<{ message: string }>;
 };
 
-export async function fetchSkeletonMessage(): Promise<string> {
+export async function fetchHomepage(): Promise<Homepage | null> {
   const bffUrl = process.env.BFF_URL;
   const sharedSecret = process.env.BFF_SHARED_SECRET;
 
@@ -28,9 +32,11 @@ export async function fetchSkeletonMessage(): Promise<string> {
     },
     body: JSON.stringify({
       query: /* GraphQL */ `
-        query Skeleton {
-          skeleton {
-            message
+        query Homepage {
+          homepage {
+            headline
+            body
+            imageUrl
           }
         }
       `,
@@ -42,16 +48,15 @@ export async function fetchSkeletonMessage(): Promise<string> {
     throw new Error(`BFF request failed with status ${response.status}`);
   }
 
-  const payload = (await response.json()) as SkeletonQueryResult;
+  const payload = (await response.json()) as HomepageQueryResult;
 
   if (payload.errors?.length) {
     throw new Error(payload.errors.map((error) => error.message).join("; "));
   }
 
-  const message = payload.data?.skeleton.message;
-  if (!message) {
-    throw new Error("BFF response missing skeleton.message");
+  if (!payload.data || !("homepage" in payload.data)) {
+    throw new Error("BFF response missing homepage");
   }
 
-  return message;
+  return payload.data.homepage;
 }
