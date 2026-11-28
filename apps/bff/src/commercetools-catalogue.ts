@@ -49,14 +49,11 @@ export function createCommercetoolsCatalogue(
         })
         .execute();
 
-      return response.body.results
-        .flatMap((projection) => {
-          const listed = toListedProduct(projection, config, channelId);
-          return listed ? [listed] : [];
-        })
-        .sort((left, right) =>
-          left.name.localeCompare(right.name, config.locale),
-        );
+      return listProductsFromProjections(
+        response.body.results,
+        config,
+        channelId,
+      );
     },
   };
 
@@ -112,20 +109,36 @@ export function createCommercetoolsCatalogue(
   }
 }
 
+/** Maps commercetools projections into listed Products for one locale/currency/channel. */
+export function listProductsFromProjections(
+  projections: ProductProjection[],
+  market: Pick<CommerceConfig, "locale" | "currency">,
+  channelId: string,
+): ListedProduct[] {
+  return projections
+    .flatMap((projection) => {
+      const listed = toListedProduct(projection, market, channelId);
+      return listed ? [listed] : [];
+    })
+    .sort((left, right) =>
+      left.name.localeCompare(right.name, market.locale),
+    );
+}
+
 function toListedProduct(
   projection: ProductProjection,
-  config: CommerceConfig,
+  market: Pick<CommerceConfig, "locale" | "currency">,
   channelId: string,
 ): ListedProduct | undefined {
   const key = projection.key?.trim();
-  const name = projection.name[config.locale]?.trim() ?? "";
+  const name = projection.name[market.locale]?.trim() ?? "";
   if (!key || !name) {
     return undefined;
   }
 
   const variants = [projection.masterVariant, ...projection.variants].flatMap(
     (variant) => {
-      const listed = toListedVariant(variant, config.currency, channelId);
+      const listed = toListedVariant(variant, market.currency, channelId);
       return listed ? [listed] : [];
     },
   );
@@ -151,16 +164,16 @@ function toListedVariant(
 }
 
 function readSize(variant: ProductVariant): string | undefined {
-  const attribute = variant.attributes?.find(
-    (item) => item.name === SIZE_ATTRIBUTE,
+  const sizeAttribute = variant.attributes?.find(
+    (attribute) => attribute.name === SIZE_ATTRIBUTE,
   );
-  if (!attribute) {
+  if (!sizeAttribute) {
     return undefined;
   }
-  return enumKey(attribute.value);
+  return sizeAttributeKey(sizeAttribute.value);
 }
 
-function enumKey(value: unknown): string | undefined {
+function sizeAttributeKey(value: unknown): string | undefined {
   if (typeof value === "string" && value.trim()) {
     return value;
   }

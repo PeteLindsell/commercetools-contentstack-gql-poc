@@ -30,7 +30,7 @@ Edit secrets if you like; local defaults work for the walking skeleton. Product 
 
 The PoC uses one locale, one currency, one store, and one distribution channel. Defaults are `en-GB`, `GBP`, store `poc`, and channel `poc-retail`. There is no market switcher.
 
-Create an API client in the Merchant Center with scope `manage_project:{projectKey}` (the seed creates product types, products, a channel, and a store). Put the credentials in the root `.env`:
+Create an API client in the Merchant Center with scope `manage_project:{projectKey}` (the seed creates a product type, products, a channel, a store, and a store assortment). Put the credentials in the root `.env`:
 
 | Variable | Purpose |
 | --- | --- |

@@ -1,4 +1,6 @@
 export const PRODUCT_TYPE_KEY = "sized-good";
+/** Store assortment for the PoC catalogue (assigned to the configured store). */
+export const PRODUCT_SELECTION_KEY = "poc";
 /** Namespaced: sample catalogues often already define `size` with a different type. */
 export const SIZE_ATTRIBUTE = "pocSize";
 export const SIZE_VALUES = ["S", "M", "L"] as const;

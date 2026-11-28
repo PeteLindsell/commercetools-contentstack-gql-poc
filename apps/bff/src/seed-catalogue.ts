@@ -1,6 +1,7 @@
 import type {
   ByProjectKeyRequestBuilder,
   Channel,
+  ProductSelection,
   ProductType,
   ProductVariantDraft,
   Store,
@@ -8,6 +9,7 @@ import type {
 } from "@commercetools/platform-sdk";
 import { pathToFileURL } from "node:url";
 import {
+  PRODUCT_SELECTION_KEY,
   PRODUCT_TYPE_KEY,
   SEEDED_CATALOGUE,
   SIZE_ATTRIBUTE,
@@ -34,10 +36,27 @@ export async function seedCatalogue(env: NodeJS.ProcessEnv): Promise<string[]> {
   const notes: string[] = [];
   const productType = await ensureProductType(apiRoot, config, notes);
   const channel = await ensureChannel(apiRoot, config, notes);
-  await ensureStore(apiRoot, config, channel, notes);
+  let store = await ensureStore(apiRoot, config, channel, notes);
+  let selection = await ensureProductSelection(apiRoot, config, notes);
+  store = await ensureStoreAssortment(apiRoot, config, store, selection, notes);
 
   for (const product of SEEDED_CATALOGUE) {
-    notes.push(await ensureProduct(apiRoot, config, productType, channel, product));
+    const ensured = await ensureProduct(
+      apiRoot,
+      config,
+      productType,
+      channel,
+      product,
+    );
+    notes.push(ensured.note);
+    const assigned = await ensureProductInSelection(
+      apiRoot,
+      selection,
+      ensured.productId,
+      product.key,
+    );
+    notes.push(assigned.note);
+    selection = assigned.selection;
   }
 
   return notes;
@@ -111,6 +130,37 @@ async function ensureChannel(
   return created.body;
 }
 
+async function ensureProductSelection(
+  apiRoot: ByProjectKeyRequestBuilder,
+  config: CommerceConfig,
+  notes: string[],
+): Promise<ProductSelection> {
+  const existing = await readCommerceBody(() =>
+    apiRoot
+      .productSelections()
+      .withKey({ key: PRODUCT_SELECTION_KEY })
+      .get()
+      .execute(),
+  );
+  if (existing) {
+    notes.push(`product selection ${PRODUCT_SELECTION_KEY} already exists`);
+    return existing;
+  }
+
+  const created = await apiRoot
+    .productSelections()
+    .post({
+      body: {
+        key: PRODUCT_SELECTION_KEY,
+        name: { [config.locale]: "PoC assortment" },
+        mode: "Individual",
+      },
+    })
+    .execute();
+  notes.push(`created product selection ${PRODUCT_SELECTION_KEY}`);
+  return created.body;
+}
+
 async function ensureStore(
   apiRoot: ByProjectKeyRequestBuilder,
   config: CommerceConfig,
@@ -172,23 +222,112 @@ async function ensureStore(
   return updated.body;
 }
 
+async function ensureStoreAssortment(
+  apiRoot: ByProjectKeyRequestBuilder,
+  config: CommerceConfig,
+  store: Store,
+  selection: ProductSelection,
+  notes: string[],
+): Promise<Store> {
+  const assigned = store.productSelections?.some(
+    (entry) => entry.productSelection.id === selection.id && entry.active,
+  );
+  if (assigned) {
+    notes.push(
+      `store ${config.storeKey} already uses assortment ${PRODUCT_SELECTION_KEY}`,
+    );
+    return store;
+  }
+
+  const updated = await apiRoot
+    .stores()
+    .withKey({ key: config.storeKey })
+    .post({
+      body: {
+        version: store.version,
+        actions: [
+          {
+            action: "addProductSelection",
+            productSelection: { typeId: "product-selection", id: selection.id },
+            active: true,
+          },
+        ],
+      },
+    })
+    .execute();
+  notes.push(
+    `assigned assortment ${PRODUCT_SELECTION_KEY} to store ${config.storeKey}`,
+  );
+  return updated.body;
+}
+
+async function ensureProductInSelection(
+  apiRoot: ByProjectKeyRequestBuilder,
+  selection: ProductSelection,
+  productId: string,
+  productKey: string,
+): Promise<{ note: string; selection: ProductSelection }> {
+  const assigned = await apiRoot
+    .productSelections()
+    .withKey({ key: PRODUCT_SELECTION_KEY })
+    .products()
+    .get({
+      queryArgs: {
+        limit: 100,
+        where: `product(id="${productId}")`,
+      },
+    })
+    .execute();
+
+  if (assigned.body.count > 0) {
+    return {
+      note: `${productKey} already in assortment ${PRODUCT_SELECTION_KEY}`,
+      selection,
+    };
+  }
+
+  const updated = await apiRoot
+    .productSelections()
+    .withKey({ key: PRODUCT_SELECTION_KEY })
+    .post({
+      body: {
+        version: selection.version,
+        actions: [
+          {
+            action: "addProduct",
+            product: { typeId: "product", id: productId },
+          },
+        ],
+      },
+    })
+    .execute();
+
+  return {
+    note: `added ${productKey} to assortment ${PRODUCT_SELECTION_KEY}`,
+    selection: updated.body,
+  };
+}
+
 async function ensureProduct(
   apiRoot: ByProjectKeyRequestBuilder,
   config: CommerceConfig,
   productType: ProductType,
   channel: Channel,
   product: CatalogueProduct,
-): Promise<string> {
+): Promise<{ note: string; productId: string }> {
   const existing = await readCommerceBody(() =>
     apiRoot.products().withKey({ key: product.key }).get().execute(),
   );
 
   if (existing) {
     if (existing.masterData.published) {
-      return `skipped ${product.key} (already published)`;
+      return {
+        note: `skipped ${product.key} (already published)`,
+        productId: existing.id,
+      };
     }
     await publishProduct(apiRoot, product.key, existing.version);
-    return `published ${product.key}`;
+    return { note: `published ${product.key}`, productId: existing.id };
   }
 
   const [master, ...rest] = product.variants;
@@ -211,7 +350,7 @@ async function ensureProduct(
     .execute();
 
   await publishProduct(apiRoot, product.key, created.body.version);
-  return `created ${product.key}`;
+  return { note: `created ${product.key}`, productId: created.body.id };
 }
 
 function variantDraft(
