@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch --env-file=../../.env src/index.ts",
+    "seed:catalogue": "tsx --env-file=../../.env src/seed-catalogue.ts",
     "build": "tsc -p tsconfig.build.json",
     "start": "node --env-file=../../.env dist/index.js",
     "test": "vitest run",
@@ -12,6 +13,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@commercetools/platform-sdk": "^9.8.0",
+    "@commercetools/ts-client": "^5.2.0",
     "graphql": "^16.11.0",
     "graphql-yoga": "^5.13.5"
   },

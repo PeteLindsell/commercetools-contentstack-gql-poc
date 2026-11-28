@@ -17,6 +17,7 @@
     "dev": "pnpm -r --parallel --filter @poc/bff --filter @poc/storefront dev",
     "dev:bff": "pnpm --filter @poc/bff dev",
     "dev:storefront": "pnpm --filter @poc/storefront dev",
+    "seed:catalogue": "pnpm --filter @poc/bff seed:catalogue",
     "build": "pnpm -r --filter @poc/bff --filter @poc/storefront build",
     "test": "pnpm -r --filter @poc/bff --filter @poc/storefront test",
     "lint": "pnpm -r --filter @poc/bff --filter @poc/storefront lint",
