@@ -22,7 +22,6 @@ export function createCommerceApiRoot(
       host: config.apiUrl,
       httpClient: fetch,
     })
-    .withUserAgentMiddleware()
     .build();
 
   return createApiBuilderFromCtpClient(client).withProjectKey({

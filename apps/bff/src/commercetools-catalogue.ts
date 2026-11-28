@@ -3,7 +3,7 @@ import type {
   ProductProjection,
   ProductVariant,
 } from "@commercetools/platform-sdk";
-import { SIZE_ATTRIBUTE } from "./catalogue-definition.js";
+import { PRODUCT_TYPE_KEY, SIZE_ATTRIBUTE } from "./catalogue-definition.js";
 import type { CommerceConfig } from "./commerce-config.js";
 import {
   createCommerceApiRoot,
@@ -24,16 +24,22 @@ export function createCommercetoolsCatalogue(
 ): ProductCatalogue {
   const apiRoot = createCommerceApiRoot(config);
   let priceChannelId: string | undefined;
+  let productTypeId: string | undefined;
 
   return {
     async listProducts() {
-      const channelId = await distributionChannelId();
+      const [channelId, typeId] = await Promise.all([
+        distributionChannelId(),
+        sizedGoodProductTypeId(),
+      ]);
       const response = await apiRoot
         .productProjections()
         .get({
           queryArgs: {
             limit: LISTING_LIMIT,
             staged: false,
+            // Sample catalogues dwarf the PoC SKUs; restrict to our product type.
+            where: `productType(id="${typeId}")`,
             priceCurrency: config.currency,
             priceChannel: channelId,
             storeProjection: config.storeKey,
@@ -53,6 +59,22 @@ export function createCommercetoolsCatalogue(
         );
     },
   };
+
+  async function sizedGoodProductTypeId(): Promise<string> {
+    if (productTypeId) {
+      return productTypeId;
+    }
+
+    const productType = await readCommerceBody(() =>
+      apiRoot.productTypes().withKey({ key: PRODUCT_TYPE_KEY }).get().execute(),
+    );
+    if (!productType) {
+      throw new CatalogueNotFoundError();
+    }
+
+    productTypeId = productType.id;
+    return productType.id;
+  }
 
   async function distributionChannelId(): Promise<string> {
     if (priceChannelId) {

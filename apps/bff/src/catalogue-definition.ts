@@ -1,5 +1,6 @@
 export const PRODUCT_TYPE_KEY = "sized-good";
-export const SIZE_ATTRIBUTE = "size";
+/** Namespaced: sample catalogues often already define `size` with a different type. */
+export const SIZE_ATTRIBUTE = "pocSize";
 export const SIZE_VALUES = ["S", "M", "L"] as const;
 
 export type SizeValue = (typeof SIZE_VALUES)[number];
