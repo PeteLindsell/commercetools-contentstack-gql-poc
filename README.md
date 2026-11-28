@@ -24,7 +24,7 @@ cp .env.example .env
 cp .env.example apps/storefront/.env.local
 ```
 
-Edit secrets if you like; local defaults work for the walking skeleton.
+Edit secrets if you like; local defaults work for the walking skeleton. Homepage content also needs Contentstack credentials. See [docs/contentstack-homepage.md](./docs/contentstack-homepage.md).
 
 ## Run locally (two processes)
 
@@ -41,7 +41,7 @@ pnpm dev:bff
 pnpm dev:storefront
 ```
 
-Then open [http://localhost:3000](http://localhost:3000). The homepage is a Server Component that queries `skeleton { message }` on the BFF using `x-bff-shared-secret`. View source / network in the browser: there is no GraphQL call from the client.
+Then open [http://localhost:3000](http://localhost:3000). The homepage is a Server Component that queries `homepage` on the BFF using `x-bff-shared-secret`. View source / network in the browser: there is no GraphQL call from the client. Without Contentstack configured, that query returns an error until the [Homepage checklist](./docs/contentstack-homepage.md) is done.
 
 ### GraphiQL (local)
 
@@ -56,16 +56,23 @@ pnpm lint
 pnpm build
 ```
 
-## Walking skeleton GraphQL contract
+## Homepage GraphQL contract
 
 ```graphql
 type Query {
   skeleton: Skeleton!
+  homepage: Homepage
 }
 
 type Skeleton {
   message: String!
 }
+
+type Homepage {
+  headline: String!
+  body: String!
+  imageUrl: String
+}
 ```
 
-Authenticated requests must send header `x-bff-shared-secret` matching `BFF_SHARED_SECRET`.
+`homepage` is editorial content from Contentstack (headline, short body, optional image) and has no Product fields. It is null when no Homepage entry is published, or when the headline and body are both blank. Authenticated requests must send header `x-bff-shared-secret` matching `BFF_SHARED_SECRET`. `skeleton` remains from the walking skeleton.
